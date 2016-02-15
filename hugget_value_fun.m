@@ -23,9 +23,12 @@ v_old = ones(n_asset_states,n_shocks);
 net_assets = R.*asset_grid' - asset_grid;
 
 utility_mat = zeros(n_asset_states,n_asset_states,n_shocks);
+feasible = false(n_asset_states,n_asset_states,n_shocks);
 
 for zzz = 1:n_shocks
     utility_mat(:,:,zzz) = A.*(max(net_assets + W.*shocks(zzz),10^-5)).^(1-gamma);
+    
+    feasible(:,:,zzz) = net_assets + W.*shocks(zzz) > 0;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,23 +42,35 @@ for iter = 1:n_iterations
                 
         expected_value = beta.*(trans_mat(zzz,:)*v_hat');
               
-    % Compute expected discounted value. The value function matrix is set up so
-    % each row is an asset holding; each coloumn is a state for the shocks. So 
-    % by multiplying the matrix, by the vector of the transition matrix given 
-    % the state we are in, this should create the expected value that each level of
-    % asset holdings will generate. If there is something messed up it would 
+        % Compute expected discounted value. The value function matrix is set up so
+        % each row is an asset holding; each coloumn is a state for the shocks. So 
+        % by multiplying the matrix, by the vector of the transition matrix given 
+        % the state we are in, this should create the expected value that each level of
+        % asset holdings will generate. If there is something messed up it
+        % would here. 
         
-        [v_test, p_test] = max(bsxfun(@plus,utility_mat(:,:,zzz),expected_value),[],2);
-               
+        % Surprisingly, the operation above appears to be the most
+        % intensive of all. Not the maximization step, but integration. 
+    
+        value_fun = bsxfun(@plus,utility_mat(:,:,zzz),expected_value);
+        
+        value_fun(~feasible(:,:,zzz)) = -1e10;
+        
+        [v_test, p_test] = max(value_fun,[],2);
+        
+        % This uses the ``bsxfun'' command to compute the value
+        % function. This is superfast. Far supierior to doing, say, repmat
+        % and constructing a matrix of expected values and adding it to the
+        % utility function. 
+             
         v_prime(:,zzz) = v_test';
         
         policy(:,zzz) = p_test';
-    % This takes the max over the matrix. See older code to see more
-    % mechanichally (but slower) how it works through state by state.
-        
+      
         v_hat(:,zzz) = v_prime(:,zzz);
-    % update the value function within the itteration. This speeds things
-    % up faster than vectorizing...
+        % updates the value function within the itteration. This + bsxfun is
+        % much faster than vectorizing this opperation over the different
+        % shock states. 
     end    
 %     disp(iter)
 %     disp([norm(v_old - v_prime,Inf),iter])
