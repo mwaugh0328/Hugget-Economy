@@ -23,12 +23,13 @@ v_old = ones(n_asset_states,n_shocks);
 net_assets = R.*asset_grid' - asset_grid;
 
 utility_mat = zeros(n_asset_states,n_asset_states,n_shocks);
-feasible = false(n_asset_states,n_asset_states,n_shocks);
 
 for zzz = 1:n_shocks
     utility_mat(:,:,zzz) = A.*(max(net_assets + W.*shocks(zzz),10^-5)).^(1-gamma);
     
-    feasible(:,:,zzz) = net_assets + W.*shocks(zzz) > 0;
+    feasible = net_assets + W.*shocks(zzz)>0;
+    
+    utility_mat(:,:,zzz) = utility_mat(:,:,zzz) + -1e10.*(~feasible);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,7 +55,7 @@ for iter = 1:n_iterations
     
         value_fun = bsxfun(@plus,utility_mat(:,:,zzz),expected_value);
         
-        value_fun(~feasible(:,:,zzz)) = -1e10;
+%         value_fun(~feasible(:,:,zzz)) = -1e10;
         
         [v_test, p_test] = max(value_fun,[],2);
         
