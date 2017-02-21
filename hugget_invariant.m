@@ -43,25 +43,28 @@ for zzz = 1:n_shocks*n_asset_states
 end
 asset_state_transition = repmat(trans_mat,n_asset_states,n_asset_states).*indicator;
 
-% step_one_invariant = mpower(asset_state_transition,1000); This is also
-% the most computationally demanding aspects of the code, initially, I was
-% just taking the matrix above to a big power to compute the invariant
-% distribution, the eigenvalue approach is much faster. 
+% Note...I've tried a bunch of stuff...this is probably the fastest...see
+% older approaches below. 
+L = zeros(1,n_shocks*n_asset_states);
+L(1) = 1.0;
 
-[V,D] = eigs(asset_state_transition',[],2);
+% the strategy is to compute Lnew = Q' * L; until Lnew -  L.
+% This is similar to doing mpower, but will stop whenever we are "close
+% enough" and doesn't do quite as much computation.
 
-index = round(diag(D),2) == 1;
+for zzz = 1:2000
+    L_new = L*asset_state_transition;
+    
+    if norm(L_new-L) < 10^-10
+        break
+    end
+    
+    L = L_new;
+end
 
-step_one_invariant = abs(V(:,index))./sum(abs(V(:,index)));
+step_one_invariant = L;
 
-% Here was the trouble I was having, given the simple code, if a agent
-% started with asset state 1, the policy function said it will always
-% stayin 1. Thus the invariant distribution was looking odd/hard to
-% understand, because there was an abosrbing state....multiple of them.
-% This is an area to be midfull of.
-
-% step_one_invariant = step_one_invariant(1,:); 
-% Just like a transition matrix, take of a row and you have it. Note that
+% Again...just like a transition matrix, take of a row and you have it. Note that
 % each column is for an asset, shock combination, so it goes [(1,1),
 % (1,2),..(2,1),(2,2)...]
 
@@ -69,3 +72,33 @@ invariant_distribution = reshape(step_one_invariant,n_shocks,n_asset_states)';
 % Reshape it so I have it where columns are shocks, rows are assets. Then
 % if you sum across the columns this will give you the mass at asset
 % holdings, which you can then plot the density of.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Alternative approaches...
+% 
+% % step_one_invariant = mpower(asset_state_transition,1000); This is also
+% % the most computationally demanding aspects of the code, initially, I was
+% % just taking the matrix above to a big power to compute the invariant
+% % distribution, the eigenvalue approach is much faster. 
+% 
+% [V,D] = eigs(asset_state_transition',[],2);
+% 
+% index = round(diag(D),2) == 1;
+% 
+% step_one_invariant = abs(V(:,index))./sum(abs(V(:,index)));
+% 
+% % Here was the trouble I was having, given the simple code, if a agent
+% % started with asset state 1, the policy function said it will always
+% % stayin 1. Thus the invariant distribution was looking odd/hard to
+% % understand, because there was an abosrbing state....multiple of them.
+% % This is an area to be midfull of.
+% 
+% % step_one_invariant = step_one_invariant(1,:); 
+% % Just like a transition matrix, take of a row and you have it. Note that
+% % each column is for an asset, shock combination, so it goes [(1,1),
+% % (1,2),..(2,1),(2,2)...]
+% 
+% invariant_distribution = reshape(step_one_invariant,n_shocks,n_asset_states)';
+% % Reshape it so I have it where columns are shocks, rows are assets. Then
+% % if you sum across the columns this will give you the mass at asset
+% % holdings, which you can then plot the density of.
