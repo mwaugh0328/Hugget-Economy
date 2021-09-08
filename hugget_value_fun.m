@@ -78,7 +78,7 @@ for iter = 1:n_iterations
     if norm(log(-1.*v_old) - log(-1.*v_prime),Inf) < tol
 %         disp('value function converged')
 %         disp(toc)
-%         disp(iter)
+         disp(iter)
         break
     else
     v_old = v_prime;
