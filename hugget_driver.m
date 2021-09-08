@@ -26,7 +26,7 @@ beta = 0.96 ; A = (1-gamma).^-1;
 rho = 0.20;
 sigma = 0.4*sqrt((1-rho.^2)); 
 
-n_shocks = 7;
+n_shocks = 20;
 
 [shocks,trans_mat] = rouwenhorst(n_shocks,rho,sigma);
 
