@@ -45,11 +45,11 @@ asset_space = linspace(grid(2),grid(3),grid(1));
 save hugget_eq_params gamma W beta shocks trans_mat grid
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% options = optimset('Display','iter','MaxFunEvals',1e2,'MaxIter',1e2,'TolFun',1e-5,'TolX',1e-5);
-% 
-% tic
-% R = fminbnd(@(x) hugget_eq_solve(x,grid,W,beta,gamma,shocks,trans_mat),beta,1/beta,options);
-% toc
+options = optimset('Display','iter','MaxFunEvals',1e2,'MaxIter',1e2,'TolFun',1e-5,'TolX',1e-5);
+
+tic
+R = fminbnd(@(x) hugget_eq_solve(x,grid,W,beta,gamma,shocks,trans_mat),beta,1/beta,options);
+toc
 
 R = 1.0292;
 
